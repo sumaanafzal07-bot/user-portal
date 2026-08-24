@@ -1,33 +1,60 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
+  
 
   useEffect(() => {
+    const socket = io("https://mern-auth-api-production-3810.up.railway.app");
+
+    socket.on("connect", () => {
+        console.log("Socket connected:", socket.id);
+    });
+    socket.on("taskUpdated", (task) => {
+    console.log("Real-time task update received:", task);
+
+    setTasks((currentTasks) =>
+        currentTasks.map((item) =>
+            item._id === task._id ? task : item
+        )
+    );
+});
+
     const fetchProfile = async () => {
-      
+        try {
+            const response = await api.get("/auth/profile");
 
-      try {
-        const response = await api.get("/auth/profile");
+            setUser(response.data);
 
-        setUser(response.data);
-      } catch (error) {
-        console.error("Profile error:", error);
+            socket.emit("joinUserRoom", response.data._id);
+            const tasksResponse = await api.get(
+    `/tasks/${response.data._id}`
+);
 
-        localStorage.removeItem("token");
-        navigate("/login");
-      } finally {
-        setLoading(false);
-      }
+setTasks(tasksResponse.data);
+        } catch (error) {
+            console.error("Profile error:", error);
+
+            localStorage.removeItem("token");
+            navigate("/login");
+        } finally {
+            setLoading(false);
+        }
     };
 
     fetchProfile();
-  }, [navigate]);
+
+    return () => {
+        socket.disconnect();
+    };
+}, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -69,6 +96,41 @@ function Dashboard() {
 
           {user && (
             <div className="space-y-4">
+              <div className="mt-8">
+    <h3 className="text-2xl font-bold mb-4">
+        Tasks
+    </h3>
+
+    {tasks.length === 0 ? (
+        <p className="text-gray-400">
+            No tasks yet.
+        </p>
+    ) : (
+        <div className="space-y-4">
+            {tasks.map((task) => (
+                <div
+                    key={task._id}
+                    className="bg-gray-700 rounded-lg p-5"
+                >
+                    <h4 className="text-xl font-semibold">
+                        {task.title}
+                    </h4>
+
+                    <p className="text-gray-400 mt-2">
+                        {task.description}
+                    </p>
+
+                    <p className="mt-3">
+                        Status:{" "}
+                        <span className="font-semibold">
+                            {task.status}
+                        </span>
+                    </p>
+                </div>
+            ))}
+        </div>
+    )}
+</div>
               <div className="bg-gray-700 rounded-lg p-5">
                 <p className="text-gray-400 text-sm">
                   Name
