@@ -29,14 +29,19 @@ function Dashboard() {
 
     const fetchProfile = async () => {
         try {
-            const response = await api.get("/auth/profile");
+          const response = await api.get("/auth/profile");
 
-            setUser(response.data);
+console.log("PROFILE:", response.data);
 
-            socket.emit("joinUserRoom", response.data._id);
-            const tasksResponse = await api.get(
-    `/tasks/${response.data._id}`
+setUser(response.data);
+
+socket.emit("joinUserRoom", response.data._id);
+
+const tasksResponse = await api.get(
+  `/tasks/${response.data._id}`
 );
+
+console.log("TASKS FROM BACKEND:", tasksResponse.data);
 
 setTasks(tasksResponse.data);
         } catch (error) {
