@@ -36,11 +36,7 @@ console.log("PROFILE:", response.data);
 setUser(response.data);
 
 socket.emit("joinUserRoom", response.data._id);
-
-const tasksResponse = await api.get(
-  `/tasks/${response.data._id}`
-);
-
+const tasksResponse = await api.get("/tasks");
 console.log("TASKS FROM BACKEND:", tasksResponse.data);
 
 setTasks(tasksResponse.data);
